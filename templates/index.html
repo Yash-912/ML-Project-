@@ -1,1 +1,431 @@
-<h1> Welcome to my home page </h1>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Exam Performance Indicator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            overflow: hidden;
+            background: #000;
+            color: #fff;
+            position: relative;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .hero-section {
+            max-width: 1200px;
+            width: 100%;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            margin-bottom: 2rem;
+            font-size: 0.875rem;
+            color: rgba(255, 255, 255, 0.9);
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        .badge-dot {
+            width: 8px;
+            height: 8px;
+            background: #10b981;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        h1 {
+            font-size: clamp(3rem, 8vw, 6rem);
+            font-weight: 700;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #4facfe 75%, #00f2fe 100%);
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 8s ease infinite, fadeIn 1s ease-out;
+        }
+
+        .subtitle {
+            font-size: clamp(1.125rem, 2vw, 1.5rem);
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 3rem;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            line-height: 1.6;
+            animation: fadeIn 1.2s ease-out;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            animation: fadeIn 1.4s ease-out;
+        }
+
+        .btn {
+            padding: 1rem 2.5rem;
+            font-size: 1.125rem;
+            font-weight: 600;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes gradientShift {
+            0%, 100% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+            
+            .subtitle {
+                font-size: 1rem;
+            }
+
+            .button-group {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    
+    <div class="container">
+        <div class="hero-section">
+            <div class="badge">
+                <span class="badge-dot"></span>
+                <span>Student Performance Analytics</span>
+            </div>
+            
+            <h1>Predict Student<br>Exam Performance</h1>
+            
+            <p class="subtitle">
+                Advanced machine learning platform to predict student math scores based on 
+                demographic, educational, and performance factors.
+            </p>
+            
+            <div class="button-group">
+                <a href="{{ url_for('predict_datapoint') }}" class="btn btn-primary">
+                    Make Prediction
+                </a>
+                <a href="{{ url_for('train_model') }}" class="btn btn-secondary">
+                    Train Model
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Canvas Animation - Adapted from React component
+        let ctx, f, e = 0, pos = {}, lines = [];
+        
+        const E = {
+            debug: true,
+            friction: 0.5,
+            trails: 80,
+            size: 50,
+            dampening: 0.025,
+            tension: 0.99,
+        };
+
+        function Node() {
+            this.x = 0;
+            this.y = 0;
+            this.vy = 0;
+            this.vx = 0;
+        }
+
+        function Spring(e) {
+            this.init(e || {});
+        }
+
+        Spring.prototype = {
+            init: function (e) {
+                this.phase = e.phase || 0;
+                this.offset = e.offset || 0;
+                this.frequency = e.frequency || 0.001;
+                this.amplitude = e.amplitude || 1;
+            },
+            update: function () {
+                this.phase += this.frequency;
+                e = this.offset + Math.sin(this.phase) * this.amplitude;
+                return e;
+            },
+            value: function () {
+                return e;
+            },
+        };
+
+        function Line(e) {
+            this.init(e || {});
+        }
+
+        Line.prototype = {
+            init: function (e) {
+                this.spring = e.spring + 0.1 * Math.random() - 0.05;
+                this.friction = E.friction + 0.01 * Math.random() - 0.005;
+                this.nodes = [];
+                for (var t, n = 0; n < E.size; n++) {
+                    t = new Node();
+                    t.x = pos.x;
+                    t.y = pos.y;
+                    this.nodes.push(t);
+                }
+            },
+            update: function () {
+                let e = this.spring;
+                let t = this.nodes[0];
+                t.vx += (pos.x - t.x) * e;
+                t.vy += (pos.y - t.y) * e;
+                
+                for (var n, i = 0, a = this.nodes.length; i < a; i++) {
+                    t = this.nodes[i];
+                    if (0 < i) {
+                        n = this.nodes[i - 1];
+                        t.vx += (n.x - t.x) * e;
+                        t.vy += (n.y - t.y) * e;
+                        t.vx += n.vx * E.dampening;
+                        t.vy += n.vy * E.dampening;
+                    }
+                    t.vx *= this.friction;
+                    t.vy *= this.friction;
+                    t.x += t.vx;
+                    t.y += t.vy;
+                    e *= E.tension;
+                }
+            },
+            draw: function () {
+                let e, t;
+                let n = this.nodes[0].x;
+                let i = this.nodes[0].y;
+                ctx.beginPath();
+                ctx.moveTo(n, i);
+                
+                for (var a = 1, o = this.nodes.length - 2; a < o; a++) {
+                    e = this.nodes[a];
+                    t = this.nodes[a + 1];
+                    n = 0.5 * (e.x + t.x);
+                    i = 0.5 * (e.y + t.y);
+                    ctx.quadraticCurveTo(e.x, e.y, n, i);
+                }
+                
+                e = this.nodes[a];
+                t = this.nodes[a + 1];
+                ctx.quadraticCurveTo(e.x, e.y, t.x, t.y);
+                ctx.stroke();
+                ctx.closePath();
+            },
+        };
+
+        function onMousemove(evt) {
+            function c(e) {
+                if (e.touches) {
+                    pos.x = e.touches[0].pageX;
+                    pos.y = e.touches[0].pageY;
+                } else {
+                    pos.x = e.clientX;
+                    pos.y = e.clientY;
+                }
+                e.preventDefault();
+            }
+
+            function l(e) {
+                if (e.touches.length == 1) {
+                    pos.x = e.touches[0].pageX;
+                    pos.y = e.touches[0].pageY;
+                }
+            }
+
+            document.removeEventListener("mousemove", onMousemove);
+            document.removeEventListener("touchstart", onMousemove);
+            document.addEventListener("mousemove", c);
+            document.addEventListener("touchmove", c);
+            document.addEventListener("touchstart", l);
+            
+            c(evt);
+            
+            lines = [];
+            for (let i = 0; i < E.trails; i++) {
+                lines.push(new Line({ spring: 0.45 + (i / E.trails) * 0.025 }));
+            }
+            
+            render();
+        }
+
+        function render() {
+            if (!ctx || !ctx.running) return;
+            
+            ctx.globalCompositeOperation = "source-over";
+            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+            ctx.globalCompositeOperation = "lighter";
+            ctx.strokeStyle = "hsla(" + Math.round(f.update()) + ",100%,50%,0.025)";
+            ctx.lineWidth = 10;
+            
+            for (var t = 0; t < E.trails; t++) {
+                let line = lines[t];
+                line.update();
+                line.draw();
+            }
+            
+            ctx.frame = (ctx.frame || 0) + 1;
+            window.requestAnimationFrame(render);
+        }
+
+        function resizeCanvas() {
+            if (ctx && ctx.canvas) {
+                ctx.canvas.width = window.innerWidth;
+                ctx.canvas.height = window.innerHeight;
+            }
+        }
+
+        function initCanvas() {
+            const canvas = document.getElementById("canvas");
+            if (!canvas) return;
+            
+            ctx = canvas.getContext("2d");
+            ctx.running = true;
+            ctx.frame = 1;
+            
+            f = new Spring({
+                phase: Math.random() * 2 * Math.PI,
+                amplitude: 85,
+                frequency: 0.0015,
+                offset: 285,
+            });
+            
+            pos.x = window.innerWidth / 2;
+            pos.y = window.innerHeight / 2;
+            
+            document.addEventListener("mousemove", onMousemove);
+            document.addEventListener("touchstart", onMousemove);
+            document.body.addEventListener("orientationchange", resizeCanvas);
+            window.addEventListener("resize", resizeCanvas);
+            
+            window.addEventListener("focus", () => {
+                if (ctx && !ctx.running) {
+                    ctx.running = true;
+                    render();
+                }
+            });
+            
+            window.addEventListener("blur", () => {
+                if (ctx) {
+                    ctx.running = false;
+                }
+            });
+            
+            resizeCanvas();
+        }
+
+        // Initialize on load
+        window.addEventListener('load', () => {
+            initCanvas();
+            if (ctx && ctx.running) {
+                render();
+            }
+        });
+    </script>
+</body>
+</html>

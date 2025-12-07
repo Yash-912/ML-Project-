@@ -1,14 +1,513 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Model Training</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            overflow-x: hidden;
+            background: #000;
+            color: #fff;
+            position: relative;
+            min-height: 100vh;
+            width: 100vw;
+        }
+
+        #canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .train-wrapper {
+            width: 100%;
+            max-width: 600px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 3rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        .header {
+            margin-bottom: 2rem;
+        }
+
+        .header h1 {
+            font-size: clamp(2rem, 5vw, 2.5rem);
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #4facfe 75%, #00f2fe 100%);
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 8s ease infinite;
+        }
+
+        .header p {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+
+        .train-form {
+            margin: 2rem 0;
+        }
+
+        .btn-train {
+            width: 100%;
+            padding: 1.25rem 2rem;
+            font-size: 1.125rem;
+            font-weight: 600;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-train:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn-train:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .btn-train.loading {
+            color: transparent;
+        }
+
+        .btn-train.loading::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            margin: -10px 0 0 -10px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        .result-message {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            border-radius: 12px;
+            animation: fadeIn 0.5s ease-out;
+            display: none;
+        }
+
+        .result-message.show {
+            display: block;
+        }
+
+        .result-message.success {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .result-message.error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .result-message h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .result-message.success h3 {
+            color: #10b981;
+        }
+
+        .result-message.error h3 {
+            color: #ef4444;
+        }
+
+        .result-message p {
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.6;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 2rem;
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .back-link:hover {
+            color: rgba(255, 255, 255, 1);
+        }
+
+        .info-box {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            font-size: 0.875rem;
+            color: rgba(255, 255, 255, 0.6);
+            line-height: 1.6;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes gradientShift {
+            0%, 100% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .train-wrapper {
+                padding: 2rem 1.5rem;
+            }
+
+            .header h1 {
+                font-size: 1.75rem;
+            }
+        }
+    </style>
 </head>
 <body>
-    <h1>Retrain Model</h1>
-    <p>Click the button below to trigger model retraining.</p>
-    <form method="POST">
-        <button type="submit">Start Training</button>
-    </form>
-    <p><a href="/">Back to Home</a></p>
+    <canvas id="canvas"></canvas>
+    
+    <div class="container">
+        <div class="train-wrapper">
+            <div class="header">
+                <h1>Retrain Model</h1>
+                <p>Click the button below to trigger model retraining. This process may take a few moments.</p>
+            </div>
+
+            <form method="POST" id="trainForm" class="train-form">
+                <button type="submit" class="btn-train" id="trainButton">
+                    Start Training
+                </button>
+            </form>
+
+            <div class="result-message" id="resultMessage">
+                <h3 id="resultTitle"></h3>
+                <p id="resultText"></p>
+            </div>
+
+            <div class="info-box">
+                <strong>Note:</strong> The training process will retrain the machine learning model using the latest data. 
+                The R2 score will be displayed upon completion.
+            </div>
+
+            <a href="{{ url_for('index') }}" class="back-link">
+                ← Back to Home
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // Canvas Animation
+        let ctx, f, e = 0, pos = {}, lines = [];
+        
+        const E = {
+            debug: true,
+            friction: 0.5,
+            trails: 80,
+            size: 50,
+            dampening: 0.025,
+            tension: 0.99,
+        };
+
+        function Node() {
+            this.x = 0;
+            this.y = 0;
+            this.vy = 0;
+            this.vx = 0;
+        }
+
+        function Spring(e) {
+            this.init(e || {});
+        }
+
+        Spring.prototype = {
+            init: function (e) {
+                this.phase = e.phase || 0;
+                this.offset = e.offset || 0;
+                this.frequency = e.frequency || 0.001;
+                this.amplitude = e.amplitude || 1;
+            },
+            update: function () {
+                this.phase += this.frequency;
+                e = this.offset + Math.sin(this.phase) * this.amplitude;
+                return e;
+            },
+            value: function () {
+                return e;
+            },
+        };
+
+        function Line(e) {
+            this.init(e || {});
+        }
+
+        Line.prototype = {
+            init: function (e) {
+                this.spring = e.spring + 0.1 * Math.random() - 0.05;
+                this.friction = E.friction + 0.01 * Math.random() - 0.005;
+                this.nodes = [];
+                for (var t, n = 0; n < E.size; n++) {
+                    t = new Node();
+                    t.x = pos.x;
+                    t.y = pos.y;
+                    this.nodes.push(t);
+                }
+            },
+            update: function () {
+                let e = this.spring;
+                let t = this.nodes[0];
+                t.vx += (pos.x - t.x) * e;
+                t.vy += (pos.y - t.y) * e;
+                
+                for (var n, i = 0, a = this.nodes.length; i < a; i++) {
+                    t = this.nodes[i];
+                    if (0 < i) {
+                        n = this.nodes[i - 1];
+                        t.vx += (n.x - t.x) * e;
+                        t.vy += (n.y - t.y) * e;
+                        t.vx += n.vx * E.dampening;
+                        t.vy += n.vy * E.dampening;
+                    }
+                    t.vx *= this.friction;
+                    t.vy *= this.friction;
+                    t.x += t.vx;
+                    t.y += t.vy;
+                    e *= E.tension;
+                }
+            },
+            draw: function () {
+                let e, t;
+                let n = this.nodes[0].x;
+                let i = this.nodes[0].y;
+                ctx.beginPath();
+                ctx.moveTo(n, i);
+                
+                for (var a = 1, o = this.nodes.length - 2; a < o; a++) {
+                    e = this.nodes[a];
+                    t = this.nodes[a + 1];
+                    n = 0.5 * (e.x + t.x);
+                    i = 0.5 * (e.y + t.y);
+                    ctx.quadraticCurveTo(e.x, e.y, n, i);
+                }
+                
+                e = this.nodes[a];
+                t = this.nodes[a + 1];
+                ctx.quadraticCurveTo(e.x, e.y, t.x, t.y);
+                ctx.stroke();
+                ctx.closePath();
+            },
+        };
+
+        function onMousemove(evt) {
+            function c(e) {
+                if (e.touches) {
+                    pos.x = e.touches[0].pageX;
+                    pos.y = e.touches[0].pageY;
+                } else {
+                    pos.x = e.clientX;
+                    pos.y = e.clientY;
+                }
+                e.preventDefault();
+            }
+
+            function l(e) {
+                if (e.touches.length == 1) {
+                    pos.x = e.touches[0].pageX;
+                    pos.y = e.touches[0].pageY;
+                }
+            }
+
+            document.removeEventListener("mousemove", onMousemove);
+            document.removeEventListener("touchstart", onMousemove);
+            document.addEventListener("mousemove", c);
+            document.addEventListener("touchmove", c);
+            document.addEventListener("touchstart", l);
+            
+            c(evt);
+            
+            lines = [];
+            for (let i = 0; i < E.trails; i++) {
+                lines.push(new Line({ spring: 0.45 + (i / E.trails) * 0.025 }));
+            }
+            
+            render();
+        }
+
+        function render() {
+            if (!ctx || !ctx.running) return;
+            
+            ctx.globalCompositeOperation = "source-over";
+            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+            ctx.globalCompositeOperation = "lighter";
+            ctx.strokeStyle = "hsla(" + Math.round(f.update()) + ",100%,50%,0.025)";
+            ctx.lineWidth = 10;
+            
+            for (var t = 0; t < E.trails; t++) {
+                let line = lines[t];
+                line.update();
+                line.draw();
+            }
+            
+            ctx.frame = (ctx.frame || 0) + 1;
+            window.requestAnimationFrame(render);
+        }
+
+        function resizeCanvas() {
+            if (ctx && ctx.canvas) {
+                ctx.canvas.width = window.innerWidth;
+                ctx.canvas.height = window.innerHeight;
+            }
+        }
+
+        function initCanvas() {
+            const canvas = document.getElementById("canvas");
+            if (!canvas) return;
+            
+            ctx = canvas.getContext("2d");
+            ctx.running = true;
+            ctx.frame = 1;
+            
+            f = new Spring({
+                phase: Math.random() * 2 * Math.PI,
+                amplitude: 85,
+                frequency: 0.0015,
+                offset: 285,
+            });
+            
+            pos.x = window.innerWidth / 2;
+            pos.y = window.innerHeight / 2;
+            
+            document.addEventListener("mousemove", onMousemove);
+            document.addEventListener("touchstart", onMousemove);
+            document.body.addEventListener("orientationchange", resizeCanvas);
+            window.addEventListener("resize", resizeCanvas);
+            
+            window.addEventListener("focus", () => {
+                if (ctx && !ctx.running) {
+                    ctx.running = true;
+                    render();
+                }
+            });
+            
+            window.addEventListener("blur", () => {
+                if (ctx) {
+                    ctx.running = false;
+                }
+            });
+            
+            resizeCanvas();
+        }
+
+        // Handle form submission with fetch API
+        document.getElementById('trainForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const button = document.getElementById('trainButton');
+            const resultMessage = document.getElementById('resultMessage');
+            const resultTitle = document.getElementById('resultTitle');
+            const resultText = document.getElementById('resultText');
+            
+            // Show loading state
+            button.disabled = true;
+            button.classList.add('loading');
+            resultMessage.classList.remove('show', 'success', 'error');
+            
+            try {
+                const response = await fetch('/train', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    resultMessage.classList.add('show', 'success');
+                    resultTitle.textContent = 'Training Successful!';
+                    resultText.textContent = data.message;
+                } else {
+                    throw new Error(data.message || 'Training failed');
+                }
+            } catch (error) {
+                resultMessage.classList.add('show', 'error');
+                resultTitle.textContent = 'Training Failed';
+                resultText.textContent = error.message || 'An error occurred during training. Please try again.';
+            } finally {
+                button.disabled = false;
+                button.classList.remove('loading');
+            }
+        });
+
+        window.addEventListener('load', () => {
+            initCanvas();
+            if (ctx && ctx.running) {
+                render();
+            }
+        });
+    </script>
 </body>
 </html>
