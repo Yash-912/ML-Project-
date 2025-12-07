@@ -1,10 +1,12 @@
-from flask import Flask,request, render_template 
+from flask import Flask,request, render_template, jsonify
 import numpy as np
 import pandas as pd 
+import sys
 
 from sklearn.preprocessing import StandardScaler
 from src.pipeline.predict_pipeline import CustomData,PredictPipeline
-
+from src.pipeline.train_pipeline import TrainPipeline
+from src.exception import CustomException
 application=Flask(__name__)
 
 app=application
@@ -33,5 +35,20 @@ def predict_datapoint():
         results=predict_pipeline.predict(pred_df)
         return render_template('home.html',results=results[0])
     
+@app.route('/train',methods=['GET','POST'])
+def train_model():
+    if request.method=='GET':
+        return render_template('train.html')
+    else:
+        try:
+            train_pipeline=TrainPipeline()
+            r2=train_pipeline.run()
+            return jsonify({
+                'status':'success',
+                'message':f'Model Trained Successfully with R2 Score: {r2}'
+            })
+        except Exception as e:
+            raise CustomException(e,sys)
+
 if __name__=='__main__':
     app.run(host="0.0.0.0",debug=True)
